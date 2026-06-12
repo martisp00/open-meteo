@@ -1,0 +1,14 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: main
+    tables:
+      - name: raw_locations
+        description: "City metadata and coordinates from Geocoding API"
+      - name: raw_weather_daily
+        description: "Daily historical weather observations (past 30 days)"
+      - name: raw_forecast_daily
+        description: "Daily weather forecasts (next 7 days)"
+      - name: raw_air_quality_hourly
+        description: "Hourly air quality measurements"

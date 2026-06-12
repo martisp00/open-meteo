@@ -1,0 +1,24 @@
+# Raw data files (reproduce via extract script)
+data/raw/
+
+# DuckDB database
+*.duckdb
+*.duckdb.wal
+
+# dbt artifacts
+target/
+dbt_packages/
+logs/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.python-version
+
+# Environment
+.env
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,19 @@
+version: 2
+
+models:
+  - name: dim_location
+    description: "City dimension table with coordinates"
+    columns:
+      - name: city_name
+        tests: [not_null, unique]
+
+  - name: fct_city_weather_day
+    description: "One row per city per day — weather + air quality"
+    columns:
+      - name: city_name
+        tests: [not_null]
+      - name: date
+        tests: [not_null]
+
+  - name: mart_forecast_accuracy
+    description: "Forecast accuracy summary per city"
