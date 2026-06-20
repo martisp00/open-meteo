@@ -28,5 +28,5 @@ models:
     columns:
       - name: city_name
         tests: [not_null]
-      - name: datetime
+      - name: timestamp
         tests: [not_null]

@@ -1,8 +1,10 @@
-import streamlit as st
+import os
+
 import duckdb
 import pandas as pd
+import streamlit as st
 
-DB_PATH = "../my_database.duckdb"
+DB_PATH = os.path.join(os.path.dirname(__file__), "..", "my_database.duckdb")
 
 st.set_page_config(page_title="Weather Analytics", layout="wide")
 st.title("Weather Analytics Dashboard")
