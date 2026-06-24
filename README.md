@@ -28,7 +28,7 @@ uv pip install -r requirements.txt
 python scripts/extract_open_meteo.py --cities Madrid Barcelona Valencia Sevilla Bilbao Lisbon Porto Paris --past-days 90 --forecast-days 7
 
 # 4. Load the CSV files into DuckDB
-python create_db.py
+python scripts/load_to_duckdb.py
 
 # 5. Point dbt at the local profile, install packages, build and test
 # Windows PowerShell:
