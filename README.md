@@ -25,7 +25,7 @@ uv venv
 uv pip install -r requirements.txt
 
 # 3. Extract raw data from Open-Meteo
-python scripts/extract_open_meteo.py --cities Madrid Barcelona Valencia Sevilla Bilbao Lisbon Porto Paris --past-days 90 --forecast-days 7
+python scripts/extract_open_meteo.py
 
 # 4. Load the CSV files into DuckDB
 python scripts/load_to_duckdb.py

@@ -25,12 +25,16 @@ from typing import Any
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
+# Shared team settings live in config.py at the project root.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from config import CITIES, PAST_DAYS, FORECAST_DAYS
+
 
 GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 AIR_QUALITY_URL = "https://air-quality-api.open-meteo.com/v1/air-quality"
 
-DEFAULT_CITIES = ["Madrid", "Barcelona", "Valencia", "Sevilla", "Bilbao"]
+# City list now comes from config.py (CITIES) so the whole team shares one source.
 DEFAULT_DAILY_WEATHER_VARIABLES = [
     "temperature_2m_max",
     "temperature_2m_min",
@@ -57,19 +61,19 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--cities",
         nargs="+",
-        default=DEFAULT_CITIES,
+        default=CITIES,
         help="City names to search in the Open-Meteo Geocoding API.",
     )
     parser.add_argument(
         "--past-days",
         type=int,
-        default=30,
+        default=PAST_DAYS,
         help="Number of recent past days to extract from the Forecast API. Maximum is 92.",
     )
     parser.add_argument(
         "--forecast-days",
         type=int,
-        default=7,
+        default=FORECAST_DAYS,
         help="Number of future forecast days to extract. Maximum is 16.",
     )
     parser.add_argument(
