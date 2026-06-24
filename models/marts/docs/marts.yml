@@ -2,18 +2,77 @@ version: 2
 
 models:
   - name: dim_location
-    description: "City dimension table with coordinates"
+    description: "City dimension. One row per city, with coordinates and attributes from the geocoding API."
     columns:
-      - name: city_name
+      - name: location_id
+        description: "Open-Meteo geocoding id for the city. Primary key."
         tests: [not_null, unique]
+      - name: city_name
+        description: "City name. Natural key used to join weather and air quality across the project."
+        tests: [not_null, unique]
+      - name: country
+        description: "Country name."
+      - name: latitude
+        description: "City latitude in decimal degrees."
+      - name: longitude
+        description: "City longitude in decimal degrees."
 
   - name: fct_city_weather_day
-    description: "One row per city per day — weather + air quality"
+    description: "Fact table. One row per city per day: daily weather, comfort/risk flags, and daily air quality where available."
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - city_name
+              - date
     columns:
       - name: city_name
-        tests: [not_null]
+        description: "City the day belongs to. Foreign key to dim_location."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_location')
+                field: city_name
       - name: date
+        description: "Calendar date of the observation."
         tests: [not_null]
+      - name: temperature_2m_max
+        description: "Daily maximum air temperature at 2m, in Celsius."
+        tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: -50
+                max_value: 60
+      - name: precipitation_sum
+        description: "Total daily precipitation in mm. Cannot be negative."
+        tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+      - name: avg_aqi
+        description: "Average European AQI for the day. Null outside the air quality forecast horizon."
+
+  - name: mart_city_comfort
+    description: "One row per city summarizing comfort and risk over the whole period. Powers the dashboard ranking."
+    columns:
+      - name: city_name
+        description: "City. Primary key of this summary."
+        tests: [not_null, unique]
+      - name: comfort_score
+        description: "Percent of observed days that were comfortable (mild, dry, calm). Between 0 and 100."
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                max_value: 100
 
   - name: mart_forecast_accuracy
-    description: "Forecast accuracy summary per city"
+    description: "Forecast accuracy per city: how far forecast max temperature was from actual, for overlapping dates."
+    columns:
+      - name: city_name
+        description: "City. Primary key of this summary."
+        tests: [not_null, unique]
+      - name: mae_temp
+        description: "Mean absolute error of forecast vs actual max temp, in Celsius."

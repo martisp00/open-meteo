@@ -1,0 +1,5 @@
+dbt-duckdb>=1.8,<1.9
+duckdb
+streamlit
+pandas
+certifi

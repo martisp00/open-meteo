@@ -2,10 +2,8 @@ version: 2
 
 models:
   - name: int_air_quality_daily
-    description: "Hourly air quality aggregated to daily level"
-
+    description: "Hourly air quality aggregated to one row per city per day (avg and max of pollutants)."
   - name: int_weather_flags
-    description: "Daily weather enriched with heat/rain flags"
-
+    description: "Daily weather enriched with comfort and risk flags (heat, freezing, heavy rain, windy, comfortable)."
   - name: int_forecast_vs_actual
-    description: "Forecast joined to actuals for accuracy analysis"
+    description: "Forecast joined to actuals on matching city and date (inner join) to compute temperature error."
