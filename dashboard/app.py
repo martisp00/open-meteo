@@ -156,7 +156,7 @@ with col2:
 weather = run_query(
     """
     select date, temperature_2m_max, temperature_2m_min, temperature_2m_mean,
-           precipitation_sum, wind_speed_10m_max, avg_aqi
+           precipitation_sum
     from fct_city_weather_day
     where city_name = ? and date between ? and ?
     order by date
