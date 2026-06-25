@@ -73,3 +73,30 @@ tick the boxes.
 - Forecast accuracy is thin from a single extraction run (see the inner join note).
 - Air quality only covers the forecast horizon, so historical air quality is missing.
 - The comfort thresholds are our own choice, so the ranking is only as meaningful as that definition.
+
+## Dimensions vs facts in the marts
+We split the core marts into a dimension and a fact on purpose. `dim_location` is the
+"who/what": one row per city with its name, country and coordinates, stuff that describes a
+city and basically never changes. `fct_city_weather_day` is the "how much/how many": one
+row per city per day with the actual measurements (temperature, rain, wind, air quality).
+This is the dimensional modeling idea from class. Splitting them means the dashboard can
+join a small, stable city table onto a big, growing measurements table, instead of
+repeating the city attributes on every single daily row.
+
+## Source freshness
+Weather data goes stale fast. A dashboard showing last week's weather is useless, so we
+added freshness checks on the three time-series sources (daily weather, forecast, hourly
+air quality). They look at the `extracted_at` timestamp our extraction script stamps on
+every row and warn if the newest data is over 24 hours old, error if it is over 48. We
+deliberately did NOT put freshness on `raw_locations`, because city coordinates are static
+reference data, they do not refresh, so checking them for freshness would be meaningless.
+That difference between refreshing facts and static reference data is the whole point.
+
+## The dashboard as an exposure
+We declared the Streamlit dashboard as a dbt exposure. That sounds fancy but the idea is
+simple: it tells dbt "this dashboard is a real downstream consumer of these specific
+models", so the dashboard shows up as a node at the end of the lineage graph. Now you can
+trace the whole pipeline from the raw Open-Meteo API all the way to the actual thing a
+person looks at, in one picture. It also means we can run `dbt build --select +exposure`
+to build everything the dashboard depends on before a refresh, which is how a real team
+would make sure a dashboard is not showing stale numbers.
