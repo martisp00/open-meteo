@@ -1,14 +1,26 @@
 version: 2
-
 sources:
   - name: raw
     schema: main
+    description: "Raw weather data pulled from the Open-Meteo API by our extraction script."
     tables:
       - name: raw_locations
-        description: "City metadata and coordinates from Geocoding API"
+        description: "City metadata and coordinates from the Geocoding API. Static reference data, so no freshness check (city coordinates dont change)."
       - name: raw_weather_daily
-        description: "Daily historical weather observations (past 30 days)"
+        description: "Daily historical weather observations (past 90 days)."
+        loaded_at_field: extracted_at
+        freshness:
+          warn_after: {count: 24, period: hour}
+          error_after: {count: 48, period: hour}
       - name: raw_forecast_daily
-        description: "Daily weather forecasts (next 7 days)"
+        description: "Daily weather forecasts (next 7 days)."
+        loaded_at_field: extracted_at
+        freshness:
+          warn_after: {count: 24, period: hour}
+          error_after: {count: 48, period: hour}
       - name: raw_air_quality_hourly
-        description: "Hourly air quality measurements"
+        description: "Hourly air quality measurements."
+        loaded_at_field: extracted_at
+        freshness:
+          warn_after: {count: 24, period: hour}
+          error_after: {count: 48, period: hour}
