@@ -7,6 +7,7 @@ Reads from the final dbt mart models in DuckDB. Run from the project root:
 from pathlib import Path
 import duckdb
 import pandas as pd
+import pydeck as pdk
 import streamlit as st
 
 # Resolve the database at the project root, no matter where streamlit is launched from.
@@ -31,8 +32,50 @@ st.caption("Open-Meteo data modeled with dbt. Main model grain (fct_city_weather
 # Map of cities in the analysis
 # ---------------------------------------------------------------------------
 st.subheader("Cities in the analysis")
-locations = run_query("select city_name, latitude, longitude from dim_location")
-st.map(locations, latitude="latitude", longitude="longitude", size=20000)
+st.caption("Each dot is a city, colored by its comfort score. Greener is more comfortable, redder is less. Hover over a dot to see the city.")
+
+map_data = run_query(
+    """
+    select l.city_name, c.country, l.latitude, l.longitude,
+           round(c.comfort_score, 1) as comfort_score
+    from dim_location l
+    join mart_city_comfort c on l.city_name = c.city_name
+    """
+)
+
+# Color each dot on a red to green scale based on comfort score,
+# spread across the actual min and max so the difference is easy to see.
+lo = map_data["comfort_score"].min()
+hi = map_data["comfort_score"].max()
+span = (hi - lo) or 1.0
+norm = (map_data["comfort_score"] - lo) / span
+map_data["r"] = ((1 - norm) * 215).astype(int)
+map_data["g"] = (norm * 165).astype(int)
+map_data["b"] = 70
+
+st.pydeck_chart(
+    pdk.Deck(
+        layers=[
+            pdk.Layer(
+                "ScatterplotLayer",
+                data=map_data,
+                get_position="[longitude, latitude]",
+                get_fill_color="[r, g, b, 200]",
+                get_radius=35000,
+                radius_min_pixels=8,
+                radius_max_pixels=20,
+                pickable=True,
+            )
+        ],
+        initial_view_state=pdk.ViewState(
+            latitude=float(map_data["latitude"].mean()),
+            longitude=float(map_data["longitude"].mean()),
+            zoom=4,
+        ),
+        tooltip={"text": "{city_name}, {country}: comfort {comfort_score}"},
+        map_style=pdk.map_styles.CARTO_DARK,
+    )
+)
 
 # ---------------------------------------------------------------------------
 # City ranking (with a metric selector)
