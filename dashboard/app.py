@@ -57,7 +57,7 @@ metric_labels = {
 metric = st.selectbox("Rank cities by", list(metric_labels.keys()), format_func=lambda k: metric_labels[k])
 ranked = comfort.sort_values(metric, ascending=False)
 st.bar_chart(ranked.set_index("city_name")[metric])
-st.dataframe(comfort.sort_values("comfort_score", ascending=False), use_container_width=True)
+st.dataframe(comfort.sort_values("comfort_score", ascending=False), width="stretch")
 
 # ---------------------------------------------------------------------------
 # Per-city detail, with filters
@@ -102,6 +102,7 @@ st.bar_chart(weather.set_index("date")["precipitation_sum"])
 
 aq = weather.dropna(subset=["avg_aqi"])
 st.subheader("Air quality (European AQI)")
+st.caption("Open-Meteo only returns air quality for the forecast window, so this is short on purpose. Older days have no air quality data.")
 if aq.empty:
     st.info("No air quality data in this date range. Air quality is only fetched for the forecast horizon.")
 else:
@@ -111,8 +112,8 @@ else:
 # Forecast accuracy
 # ---------------------------------------------------------------------------
 st.header("Forecast accuracy by city")
-st.caption("MAE = mean absolute error between forecast and actual max temperature, overlapping dates only.")
+st.caption("MAE = mean absolute error between forecast and actual max temperature, on overlapping dates only. From one extraction run that overlap is about a day per city, so this fills out if we re-run extraction over time.")
 accuracy = run_query(
     "select city_name, days_compared, mae_temp, max_temp_error from mart_forecast_accuracy order by mae_temp"
 )
-st.dataframe(accuracy, use_container_width=True)
+st.dataframe(accuracy, width="stretch")
