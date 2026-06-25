@@ -5,6 +5,7 @@ Reads from the final dbt mart models in DuckDB. Run from the project root:
 """
 
 from pathlib import Path
+import altair as alt
 import duckdb
 import pandas as pd
 import pydeck as pdk
@@ -78,6 +79,38 @@ st.pydeck_chart(
 )
 
 # ---------------------------------------------------------------------------
+# The big picture: comfort vs air quality
+# ---------------------------------------------------------------------------
+st.header("The big picture: comfort vs air quality")
+st.caption("Each city is placed by comfort (right is more comfortable, over 90 days) and air quality (up is cleaner, over the recent forecast window). Cities toward the top right are strong on both. The two do not move together, so the most comfortable city is not automatically the one with the cleanest air.")
+overview = run_query(
+    """
+    select c.city_name, c.comfort_score, a.avg_aqi, a.aqi_category
+    from mart_city_comfort c
+    join mart_air_quality_summary a on c.city_name = a.city_name
+    """
+)
+overview_points = (
+    alt.Chart(overview)
+    .mark_circle(size=260, color="#4c9be8", opacity=0.85)
+    .encode(
+        x=alt.X("comfort_score:Q", title="Comfort score (right is more comfortable)"),
+        y=alt.Y("avg_aqi:Q", title="Air quality, AQI (up is cleaner)", scale=alt.Scale(reverse=True)),
+        tooltip=["city_name", "comfort_score", "avg_aqi", "aqi_category"],
+    )
+)
+overview_labels = (
+    alt.Chart(overview)
+    .mark_text(dy=-15, fontSize=12, color="#cccccc")
+    .encode(
+        x=alt.X("comfort_score:Q"),
+        y=alt.Y("avg_aqi:Q", scale=alt.Scale(reverse=True)),
+        text="city_name:N",
+    )
+)
+st.altair_chart((overview_points + overview_labels).properties(height=420, width="container"))
+
+# ---------------------------------------------------------------------------
 # City ranking (with a metric selector)
 # ---------------------------------------------------------------------------
 st.header("City ranking")
@@ -143,13 +176,62 @@ st.line_chart(weather.set_index("date")[["temperature_2m_max", "temperature_2m_m
 st.subheader("Daily precipitation (mm)")
 st.bar_chart(weather.set_index("date")["precipitation_sum"])
 
-aq = weather.dropna(subset=["avg_aqi"])
-st.subheader("Air quality (European AQI)")
-st.caption("Open-Meteo only returns air quality for the forecast window, so this is short on purpose. Older days have no air quality data.")
-if aq.empty:
-    st.info("No air quality data in this date range. Air quality is only fetched for the forecast horizon.")
-else:
-    st.line_chart(aq.set_index("date")["avg_aqi"])
+# ---------------------------------------------------------------------------
+# Monthly weather trends
+# ---------------------------------------------------------------------------
+st.header("Monthly weather trends")
+st.caption("Average temperature per city per month, so you can watch the season build across the period. Hover a point for that month's detail.")
+monthly = run_query(
+    """
+    select city_name, month, avg_temp, min_temp, max_temp, total_precipitation, comfortable_days
+    from mart_monthly_weather
+    order by month, city_name
+    """
+)
+monthly_chart = (
+    alt.Chart(monthly)
+    .mark_line(point=True)
+    .encode(
+        x=alt.X("month:T", title="Month", axis=alt.Axis(format="%b %Y", tickCount={"interval": "month", "step": 1})),
+        y=alt.Y("avg_temp:Q", title="Average temperature (C)"),
+        color=alt.Color("city_name:N", title="City"),
+        tooltip=["city_name", "month", "avg_temp", "min_temp", "max_temp", "total_precipitation"],
+    )
+    .properties(height=360, width="container")
+)
+st.altair_chart(monthly_chart)
+
+# ---------------------------------------------------------------------------
+# Air quality by city
+# ---------------------------------------------------------------------------
+st.header("Air quality by city")
+st.caption("Average European AQI per city over the days we have air quality for, which is the forecast window (a few recent days). Lower is cleaner. Bars are colored by air quality band, and the table breaks out PM2.5 and PM10.")
+air = run_query(
+    """
+    select city_name, avg_aqi, aqi_category, avg_pm2_5, avg_pm10, days_with_air_quality
+    from mart_air_quality_summary
+    order by avg_aqi
+    """
+)
+aqi_order = ["Good", "Fair", "Moderate", "Poor"]
+aqi_colors = ["#2ecc71", "#f1c40f", "#e67e22", "#e74c3c"]
+aqi_chart = (
+    alt.Chart(air)
+    .mark_bar()
+    .encode(
+        x=alt.X("avg_aqi:Q", title="Average European AQI (lower is cleaner)"),
+        y=alt.Y("city_name:N", sort="x", title=None),
+        color=alt.Color(
+            "aqi_category:N",
+            scale=alt.Scale(domain=aqi_order, range=aqi_colors),
+            legend=alt.Legend(title="AQI band"),
+        ),
+        tooltip=["city_name", "avg_aqi", "aqi_category", "avg_pm2_5", "avg_pm10", "days_with_air_quality"],
+    )
+    .properties(height=320, width="container")
+)
+st.altair_chart(aqi_chart)
+st.dataframe(air, width="stretch")
 
 # ---------------------------------------------------------------------------
 # Forecast accuracy
