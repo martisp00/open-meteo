@@ -1,0 +1,17 @@
+version: 2
+
+models:
+  - name: mart_city_risk
+    description: "One row per city summarizing weather risk. risk_score = percent of days with at least one risk flag (heat, heavy rain, or wind)."
+    columns:
+      - name: city_name
+        description: "City. Primary key."
+        tests: [not_null, unique]
+      - name: risk_score
+        description: "Percent of days flagged risky (heat, heavy rain, or windy). 0 to 100."
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                max_value: 100
