@@ -1,0 +1,22 @@
+version: 2
+
+models:
+  - name: mart_monthly_weather
+    description: >
+      one row per city per month. rolls up the daily fact table into monthly
+      summaries so we can see seasonal patterns and compare months across cities.
+    columns:
+      - name: city_name
+        description: city this monthly summary is for.
+        tests:
+          - not_null
+      - name: month
+        description: first day of the month (daily dates truncated to month).
+        tests:
+          - not_null
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - city_name
+              - month
