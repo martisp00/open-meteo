@@ -1,0 +1,16 @@
+version: 2
+
+models:
+  - name: mart_air_quality_summary
+    description: "One row per city summarizing air quality over the days where it is available (the forecast horizon)."
+    columns:
+      - name: city_name
+        description: "City. Primary key."
+        tests: [not_null, unique]
+      - name: aqi_category
+        description: "Readable band of the average European AQI for the city."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Good', 'Fair', 'Moderate', 'Poor']
