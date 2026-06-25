@@ -1,0 +1,21 @@
+version: 2
+
+exposures:
+  - name: weather_dashboard
+    label: "City Weather & Comfort Dashboard"
+    type: dashboard
+    maturity: high
+    url: https://github.com/martisp00/open-meteo
+    description: >
+      Streamlit dashboard for comparing Spanish and Portuguese cities on weather,
+      comfort, air quality and forecast accuracy. This is the main thing a user
+      actually looks at, so it sits at the very end of our pipeline. It reads
+      straight from the mart and dimension models below.
+    depends_on:
+      - ref('dim_location')
+      - ref('fct_city_weather_day')
+      - ref('mart_city_comfort')
+      - ref('mart_forecast_accuracy')
+    owner:
+      name: "Open-Meteo team (Francisco, Mateus, Teresa, Marti)"
+      email: dgarciah@faculty.ie.edu
