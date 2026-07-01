@@ -44,11 +44,11 @@ The pipeline on `master` is complete and delivered. The unchecked boxes further 
 All four staging models currently pass through raw columns with no transformation.
 Each one needs:
 
-- [ ] **`stg_locations.sql`** — select only needed columns, cast types, add surrogate key with `dbt_utils.generate_surrogate_key`
+- [x] **`stg_locations.sql`** — selects needed columns and casts types. Surrogate key deliberately skipped: `location_id` from the geocoding API is a tested natural key (`unique` + `not_null` on `dim_location`), so a surrogate adds nothing.
 - [x] **`stg_weather_daily.sql`** — cast `date` to `date`, rename verbose column names if desired, drop `source_name`/`extracted_at`
-- [x] **`stg_forecast_daily.sql`** — same treatment as weather; keep `source_name` so forecast rows are distinguishable after joins
-- [ ] **`stg_air_quality_hourly.sql`** — cast `timestamp` to `timestamp`, drop duplicates (the API can return the same hour twice across extraction runs)
-- [ ] **`stg_locations.sql` dedup** — add `qualify row_number() over (partition by location_id order by extracted_at desc) = 1` to ensure one row per city
+- [x] **`stg_forecast_daily.sql`** — same treatment as weather; drops `source_name`/`extracted_at` like `stg_weather_daily` (the model does not keep `source_name`)
+- [x] **`stg_air_quality_hourly.sql`** — casts `timestamp`. Dedup not needed: the loader does `CREATE OR REPLACE TABLE`, so the same hour cannot land twice, and the `fct` grain test would catch it if it ever did.
+- [x] **`stg_locations.sql` dedup** — N/A by design. The `CREATE OR REPLACE` loader makes duplicate city rows impossible, and `dim_location` has `unique` + `not_null` on the id, so no `qualify` dedup is needed.
 
 ---
 

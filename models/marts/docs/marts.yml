@@ -73,6 +73,7 @@ models:
       - name: mae_temp
         description: "Mean absolute error of forecast vs actual max temp, in Celsius. Cannot be negative."
         tests:
+          - not_null
           - dbt_utils.accepted_range:
               arguments:
                 min_value: 0
