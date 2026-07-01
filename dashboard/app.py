@@ -90,25 +90,76 @@ overview = run_query(
     join mart_air_quality_summary a on c.city_name = a.city_name
     """
 )
+# Valencia is our headline city: the most comfortable in the study, so it is the
+# sharpest test of "is the comfiest city also the cleanest?". Coral makes it pop.
+is_valencia = alt.datum.city_name == "Valencia"
+
+# Fixed axis ranges (data + a little padding) so the four quadrant labels sit in the corners.
+pad_x, pad_y = 4, 3
+cx_min = float(overview["comfort_score"].min()) - pad_x
+cx_max = float(overview["comfort_score"].max()) + pad_x
+ay_min = float(overview["avg_aqi"].min()) - pad_y
+ay_max = float(overview["avg_aqi"].max()) + pad_y
+xscale = alt.Scale(domain=[cx_min, cx_max])
+yscale = alt.Scale(domain=[ay_min, ay_max], reverse=True)  # reversed so cleaner air is up
+
+# Two dashed guide lines at the average comfort and average AQI split the chart into four quadrants.
+mean_comfort = float(overview["comfort_score"].mean())
+mean_aqi = float(overview["avg_aqi"].mean())
+vline = alt.Chart(pd.DataFrame({"x": [mean_comfort]})).mark_rule(
+    color="#5b6b7d", strokeDash=[4, 4], size=1).encode(x=alt.X("x:Q", scale=xscale))
+hline = alt.Chart(pd.DataFrame({"y": [mean_aqi]})).mark_rule(
+    color="#5b6b7d", strokeDash=[4, 4], size=1).encode(y=alt.Y("y:Q", scale=yscale))
+
+# One small italic label tucked into each corner, so each region reads in plain English.
+def corner_label(x, y, text, align, baseline):
+    return alt.Chart(pd.DataFrame({"x": [x], "y": [y], "t": [text]})).mark_text(
+        align=align, baseline=baseline, dx=(8 if align == "left" else -8),
+        dy=(10 if baseline == "top" else -10), fontSize=16, fontStyle="italic", fontWeight=600, color="#aab6c4"
+    ).encode(x=alt.X("x:Q", scale=xscale), y=alt.Y("y:Q", scale=yscale), text="t:N")
+c1 = corner_label(cx_max, ay_min, "clean + comfortable", "right", "top")
+c2 = corner_label(cx_max, ay_max, "comfortable, poor air", "right", "bottom")
+c3 = corner_label(cx_min, ay_min, "clean, less comfortable", "left", "top")
+c4 = corner_label(cx_min, ay_max, "poor air, less comfortable", "left", "bottom")
+
+# Shade the four regions: teal = the win-win corner (comfortable + clean),
+# red = the worst corner, and the two trade-off corners stay neutral dark
+# (Valencia lives in one of them, so keeping it neutral lets Valencia pop).
+quads = pd.DataFrame([
+    {"x": mean_comfort, "x2": cx_max,       "y": ay_min,   "y2": mean_aqi, "fill": "good"},
+    {"x": cx_min,       "x2": mean_comfort, "y": mean_aqi, "y2": ay_max,   "fill": "bad"},
+    {"x": cx_min,       "x2": mean_comfort, "y": ay_min,   "y2": mean_aqi, "fill": "mixed"},
+    {"x": mean_comfort, "x2": cx_max,       "y": mean_aqi, "y2": ay_max,   "fill": "mixed"},
+])
+rects = alt.Chart(quads).mark_rect(opacity=0.16).encode(
+    x=alt.X("x:Q", scale=xscale), x2="x2:Q",
+    y=alt.Y("y:Q", scale=yscale), y2="y2:Q",
+    color=alt.Color("fill:N",
+        scale=alt.Scale(domain=["good", "bad", "mixed"], range=["#14b8a6", "#ef4444", "#1e293b"]),
+        legend=None),
+)
+
+# Neutral dots for every city; coral and bigger for Valencia so it stays the hero.
 overview_points = (
-    alt.Chart(overview)
-    .mark_circle(size=260, color="#4c9be8", opacity=0.85)
-    .encode(
-        x=alt.X("comfort_score:Q", title="Comfort score (right is more comfortable)"),
-        y=alt.Y("avg_aqi:Q", title="Air quality, AQI (up is cleaner)", scale=alt.Scale(reverse=True)),
+    alt.Chart(overview).mark_circle(opacity=0.95, stroke="#0e1117", strokeWidth=0.6).encode(
+        x=alt.X("comfort_score:Q", title="Comfort score  (right is more comfortable)", scale=xscale,
+                axis=alt.Axis(titleFontSize=15)),
+        y=alt.Y("avg_aqi:Q", title="Air quality, AQI  (up is cleaner)", scale=yscale,
+                axis=alt.Axis(titleFontSize=15)),
+        color=alt.condition(is_valencia, alt.value("#FF5C3A"), alt.value("#cbd5e1")),
+        size=alt.condition(is_valencia, alt.value(520), alt.value(190)),
         tooltip=["city_name", "comfort_score", "avg_aqi", "aqi_category"],
     )
 )
 overview_labels = (
-    alt.Chart(overview)
-    .mark_text(dy=-15, fontSize=12, color="#cccccc")
-    .encode(
-        x=alt.X("comfort_score:Q"),
-        y=alt.Y("avg_aqi:Q", scale=alt.Scale(reverse=True)),
+    alt.Chart(overview).mark_text(dy=-20, fontSize=14).encode(
+        x=alt.X("comfort_score:Q", scale=xscale),
+        y=alt.Y("avg_aqi:Q", scale=yscale),
         text="city_name:N",
+        color=alt.condition(is_valencia, alt.value("#FF5C3A"), alt.value("#e2e8f0")),
     )
 )
-st.altair_chart((overview_points + overview_labels).properties(height=420, width="container"))
+st.altair_chart((rects + vline + hline + c1 + c2 + c3 + c4 + overview_points + overview_labels).properties(height=470, width="container"))
 
 # ---------------------------------------------------------------------------
 # City ranking (with a metric selector)
