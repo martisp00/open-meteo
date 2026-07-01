@@ -7,7 +7,7 @@ exposures:
     maturity: high
     url: https://github.com/martisp00/open-meteo
     description: >
-      Streamlit dashboard for comparing Spanish and Portuguese cities on weather,
+      Streamlit dashboard for comparing eight European cities on weather,
       comfort, air quality and forecast accuracy. This is the main thing a user
       actually looks at, so it sits at the very end of our pipeline. It reads
       straight from the mart and dimension models below.

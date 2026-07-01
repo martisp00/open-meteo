@@ -109,7 +109,7 @@ streamlit run dashboard/app.py
 We left these honest rather than papering over them:
 
 - **Air quality only covers the forecast window.** Open-Meteo returns air quality for the next few days, not the 90 days of history, so historical air quality is missing by design.
-- **Forecast accuracy is thin from a single extraction run.** Forecast and actuals only overlap on about one day per city per run, so the accuracy table fills out only if extraction is re-run over several days.
+- **Forecast accuracy is thin from a single extraction run.** Forecast and actuals only overlap on about one day per city per run. The loader does CREATE OR REPLACE on every run, so re-running extraction does not accumulate history on its own. To build a real accuracy record we would persist each run's forecast instead of replacing it, for example by appending runs or capturing them with a dbt snapshot.
 - **The comfort thresholds are our own choice.** "Comfortable" means mild, dry, and calm by our definition, so the ranking is only as meaningful as that definition.
 
 ## Team

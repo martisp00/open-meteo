@@ -35,8 +35,7 @@ let air quality fill in only where it exists, rather than throwing away history.
 For `int_forecast_vs_actual` we used an inner join instead of a left join, because we only
 care about dates where we have both a forecast and a real observation to compare. From a
 single extraction run that overlap is basically just the current day, so
-`mart_forecast_accuracy` is thin right now. If we ran the extraction repeatedly over
-several days it would build up a real accuracy history. We left this as a known limitation
+`mart_forecast_accuracy` is thin right now. Because the loader does CREATE OR REPLACE on every run, re-running extraction does not build up history on its own. To grow a real accuracy record we would persist each run's forecast instead of replacing it, for example by appending runs or capturing them with a dbt snapshot. We left this as a known limitation
 rather than pretending the comparison is richer than it is.
 
 ## Materialization

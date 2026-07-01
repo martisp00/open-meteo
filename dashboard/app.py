@@ -176,7 +176,6 @@ metric_labels = {
     "comfortable_days": "Comfortable days",
     "heat_days": "Heat days (max >= 35C)",
     "rainy_days": "Heavy rain days (>= 20mm)",
-    "windy_days": "Windy days (>= 40 km/h)",
     "avg_temp": "Average temperature (C)",
 }
 metric = st.selectbox("Rank cities by", list(metric_labels.keys()), format_func=lambda k: metric_labels[k])
@@ -298,7 +297,7 @@ st.dataframe(air, width="stretch")
 # Forecast accuracy
 # ---------------------------------------------------------------------------
 st.header("Forecast accuracy by city")
-st.caption("MAE = forecast vs actual max temperature on overlapping dates only. One extraction run overlaps on about a day per city, so errors read near zero here and only grow meaningful as repeated runs add overlap.")
+st.caption("MAE = forecast vs actual max temperature on overlapping dates only. One extraction run overlaps on about a day per city, so errors read near zero here. The loader replaces the raw data each run, so repeated runs do not accumulate overlap on their own. Persisting each run's forecast (for example via a dbt snapshot) would grow a real accuracy history.")
 accuracy = run_query(
     "select city_name, days_compared, mae_temp, max_temp_error from mart_forecast_accuracy order by mae_temp"
 )
