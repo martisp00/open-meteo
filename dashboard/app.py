@@ -68,10 +68,8 @@ st.pydeck_chart(
                 pickable=True,
             )
         ],
-        initial_view_state=pdk.ViewState(
-            latitude=float(map_data["latitude"].mean()),
-            longitude=float(map_data["longitude"].mean()),
-            zoom=4,
+        initial_view_state=pdk.data_utils.compute_view(
+            map_data[["longitude", "latitude"]], view_proportion=0.9
         ),
         tooltip={"text": "{city_name}, {country}: comfort {comfort_score}"},
         map_style=pdk.map_styles.CARTO_DARK,
@@ -183,8 +181,18 @@ metric_labels = {
 }
 metric = st.selectbox("Rank cities by", list(metric_labels.keys()), format_func=lambda k: metric_labels[k])
 ranked = comfort.sort_values(metric, ascending=False)
-st.bar_chart(ranked.set_index("city_name")[metric])
-st.dataframe(comfort.sort_values("comfort_score", ascending=False), width="stretch")
+rank_chart = (
+    alt.Chart(ranked)
+    .mark_bar()
+    .encode(
+        x=alt.X("city_name:N", sort="-y", title=None),
+        y=alt.Y(f"{metric}:Q", title=metric_labels[metric]),
+        tooltip=["city_name", metric],
+    )
+    .properties(height=340, width="container")
+)
+st.altair_chart(rank_chart)
+st.dataframe(ranked, width="stretch", hide_index=True)
 
 # ---------------------------------------------------------------------------
 # Per-city detail, with filters
@@ -222,7 +230,9 @@ k3.metric("Total rain (mm)", round(weather["precipitation_sum"].sum(), 1))
 k4.metric("Days shown", len(weather))
 
 st.subheader("Temperature over time")
-st.line_chart(weather.set_index("date")[["temperature_2m_max", "temperature_2m_min"]])
+temp_over_time = weather.set_index("date")[["temperature_2m_max", "temperature_2m_min"]]
+temp_over_time.columns = ["Max temp", "Min temp"]
+st.line_chart(temp_over_time)
 
 st.subheader("Daily precipitation (mm)")
 st.bar_chart(weather.set_index("date")["precipitation_sum"])
@@ -288,7 +298,7 @@ st.dataframe(air, width="stretch")
 # Forecast accuracy
 # ---------------------------------------------------------------------------
 st.header("Forecast accuracy by city")
-st.caption("MAE = mean absolute error between forecast and actual max temperature, on overlapping dates only. From one extraction run that overlap is about a day per city, so this fills out if we re-run extraction over time.")
+st.caption("MAE = forecast vs actual max temperature on overlapping dates only. One extraction run overlaps on about a day per city, so errors read near zero here and only grow meaningful as repeated runs add overlap.")
 accuracy = run_query(
     "select city_name, days_compared, mae_temp, max_temp_error from mart_forecast_accuracy order by mae_temp"
 )
