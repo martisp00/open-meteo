@@ -3,6 +3,32 @@
 Track progress here. Move items to **Done** when merged to master.
 > **Update (master merge):** A full pipeline now lives on `master` (staging, intermediate, marts, tests, dashboard, docs). Items genuinely finished are ticked below. The rest are still open and are the real next tasks. Mateus's `scripts/load_to_duckdb.py` and this file were folded into master.
 
+---
+
+## Reconciliation (July 1) — status of the remaining unchecked items
+
+The pipeline on `master` is complete and delivered. The unchecked boxes further down are **not** forgotten work. Each one is either done-but-never-ticked, deliberately superseded by a better decision, or explicitly out of scope. The source of truth for the final design is `README.md` and `docs/modeling_choices.md`.
+
+**✅ Done, just never ticked below**
+- Agree on final city list, and add `config.py` for shared config (city list, past_days, forecast_days). Shipped.
+- `int_air_quality_daily`: `avg_pm10` added.
+- `dim_location`: `population` and `elevation` added.
+- `fct_city_weather_day`: `avg_pm10` added.
+
+**🔁 Superseded on purpose (defensible design decisions)**
+- `stg_locations` / `dim_location` surrogate key: we use `location_id` from the geocoding API as a natural key. It is tested `unique` + `not_null`, so a surrogate key would add nothing.
+- `stg_locations` and `stg_air_quality_hourly` dedup: the loader does `CREATE OR REPLACE TABLE` on every run, so duplicate rows across extraction runs cannot exist. The `fct` grain test would catch them if they ever did. Those dedup items assumed an append-style loader we did not build.
+- `location_id` foreign key on `fct_city_weather_day` / propagation into intermediate: referential integrity is instead provided by a `relationships` test on `city_name`, which is `unique` in `dim_location`. String joins are safe here.
+- `int_weather_flags`: `is_cold_day` was replaced by `is_freezing_day`.
+- `mart_city_comfort_score.sql` (composite score blending AQI into comfort): **deliberately not built.** We use `mart_city_comfort`, which keeps air quality OUT of the comfort score. Baking AQI into comfort would destroy our central finding, that comfort and air quality do not correlate. Keeping them separate was analytically necessary.
+
+**📋 Genuinely open, low value / nice-to-have (out of scope for this deliverable)**
+- `int_forecast_vs_actual`: min-temp and precipitation comparison (we shipped max-temp error).
+- `mart_forecast_accuracy`: `min_temp_error` / `avg_temp_error` (we shipped `max_temp_error` and `mae_temp`).
+- `mart_forecast_accuracy`: `not_null` on `mae_temp` (the `accepted_range` test already ignores nulls, and the SQL makes a null near-impossible).
+- Streamlit Community Cloud deploy instructions (local run instructions are done; the cloud deploy itself is deferred).
+- DAG diagram screenshot in `docs/` after `dbt docs generate`.
+
 
 ---
 
